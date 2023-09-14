@@ -6,3 +6,8 @@ edition = "2021"
 [dependencies]
 sqlx = { version = "0.7.1", default-features = false, features = ["runtime-tokio", "tls-rustls", "macros", "postgres", "uuid", "chrono", "migrate"] }
 serde = { version = "1", features = ["derive"] }
+actix-web = "4.0.0"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+config = "0.13.3"
+serde-aux = "4.2.0"
+serde_derive = "1.0"
