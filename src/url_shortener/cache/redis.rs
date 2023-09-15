@@ -29,6 +29,21 @@ impl CacheStore for RedisStore {
         }
     }
 
+    fn ping(&mut self) -> Result<bool, String> {
+        match redis::cmd("PING").query::<String>(&mut self.con) {
+            Ok(res) => {
+                if res == "PONG" {
+                    Ok(true)
+                } else {
+                    Ok(false)
+                }
+            },
+            Err(err) => Err(err.to_string())
+        }
+
+
+    }
+
     fn store(&self, key: &str) -> Result<String, String> {
         Ok("world".to_string())
     }
