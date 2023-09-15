@@ -1,11 +1,13 @@
 use urlshortner::configuration::get_configuration;
 
+extern crate pretty_env_logger;
+
+
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    println!("Hello, world updated!");
+    pretty_env_logger::init();
 
-    let config = get_configuration().expect("failed to read configuration");
+    let _config = get_configuration().expect("failed to read configuration");
 
-    println!("{:?} - {:?}",config.base_url, config.port);
     Ok(())
 }

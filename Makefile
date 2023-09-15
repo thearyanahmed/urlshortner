@@ -18,3 +18,5 @@ watch:
 	ulimit -n 10000
 	cargo watch -x check -x test -x run
 
+run:
+	RUST_LOG=trace cargo run
