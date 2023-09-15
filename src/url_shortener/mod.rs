@@ -6,3 +6,4 @@ mod db;
 
 pub use service::*;
 pub use cache::*;
+pub use db::*;

@@ -1,11 +1,18 @@
 use crate::url_shortener::DataStore;
 
-pub struct Postgres {
+pub struct PostgresStore {
 
 }
 
-impl DataStore for Postgres {
+impl PostgresStore {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl DataStore for PostgresStore {
     fn find_by_key(&self, key: &str) -> Result<String,String> {
+        println!("postgres find by key");
         Ok("some".to_string())
     }
 

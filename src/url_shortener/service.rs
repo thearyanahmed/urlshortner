@@ -11,19 +11,35 @@ use serde::{Serialize};
 use actix_web::HttpResponse;
 
 // @todo add boot time
-pub struct Runner {
-    server: Server,
+pub struct HttpRouter {}
+
+pub struct UrlShortenerService {
+    cache: Arc<Mutex<dyn CacheStore + Send + Sync>>,
+    db: Arc<Mutex<dyn DataStore + Send + Sync>>,
 }
 
-pub struct Test {
-    cache: Arc<Mutex<dyn CacheStore + Send + Sync>>
-}
+impl UrlShortenerService {
+    pub fn new(
+        cache_store: impl CacheStore + Send + Sync + 'static,
+        db_store: impl DataStore + Send + Sync + 'static,
+    ) -> Self {
+        let cache: Arc<Mutex<dyn CacheStore + Send + Sync>> = Arc::new(Mutex::new(cache_store));
+        let db: Arc<Mutex<dyn DataStore + Send + Sync>> = Arc::new(Mutex::new(db_store));
 
-impl Test {
+        Self {
+            cache,
+            db,
+        }
+    }
+
     pub fn hello(&self) {
         let mut c = self.cache.lock().unwrap();
 
         let _ = c.find_by_key("a");
+
+        let db = self.db.lock().unwrap();
+
+        let _ = db.find_by_key("b");
 
         println!("hello world")
     }
@@ -39,62 +55,37 @@ pub trait CacheStore {
     fn store(&self, key: &str) -> Result<String, String>;
 }
 
-// url comes -> write to db -> also write to cache -> send the response
-// key comes, checks in cache, not found? check in db, found -> write in cache
-// add a feature flag that enables tracking? or expose a middleware
+impl HttpRouter {
+    pub async fn build_http_server(config: &Settings, svc: Arc<Mutex<UrlShortenerService>>) -> Result<(), std::io::Error> {
+        let shared_app = web::Data::new(svc.clone());
 
-impl Runner {
-    pub async fn build_http_server(config: &Settings) -> Result<Self, std::io::Error> {
         let address = format!("{}:{}", &config.base_url, &config.port);
 
         let listener = TcpListener::bind(&address)?;
-        let cache= RedisStore::new();
 
-        let cache: Arc<Mutex<dyn CacheStore + Send + Sync>> = Arc::new(Mutex::new(cache));
-        // @note clone would be removed
-        let shared_cache: web::Data<Mutex<dyn CacheStore + Send + Sync>> = web::Data::from(cache.clone());
+        let server = HttpServer::new(move || {
+            App::new()
+                .route("/health-check", web::get().to(health_check))
+                .route("/shorten", web::post().to(health_check))
+                .route("/visit", web::get().to(testing_redis))
+                .route("/do", web::get().to(test_run))
+                .default_service(web::route().to(not_found))
+                .app_data(shared_app.clone())
+            })
+            .listen(listener)?
+            .run();
 
-        let test = Test {
-            cache
-        };
-
-        let test : Arc<Mutex<Test>> = Arc::new(Mutex::new(test));
-
-        let server = run(listener, shared_cache, test)?;
-
-        Ok(Self { server })
-    }
-
-    pub async fn listen_and_serve(self) -> Result<(), std::io::Error> {
-        self.server.await
+        server.await
     }
 }
 
-fn run(listener: TcpListener, cache: web::Data<Mutex<dyn CacheStore + Send + Sync>>, app: Arc<Mutex<Test>>) -> Result<Server, std::io::Error> {
-    let shared_app = web::Data::new(app.clone());
-
-    let server = HttpServer::new(move || {
-        App::new()
-            .route("/health-check", web::get().to(health_check))
-            .route("/shorten", web::post().to(health_check))
-            .route("/visit", web::get().to(testing_redis))
-            .route("/do", web::get().to(test_run))
-            .default_service(web::route().to(not_found))
-            .app_data(shared_app.clone())
-            .app_data(cache.clone())
-    })
-    .listen(listener)?
-    .run();
-
-    Ok(server)
-}
 
 #[derive(Serialize)]
 struct HealthCheckResponse {
     status: String,
 }
 
-pub async fn test_run(svc : web::Data<Arc<Mutex<Test>>>) -> HttpResponse {
+pub async fn test_run(svc: web::Data<Arc<Mutex<UrlShortenerService>>>) -> HttpResponse {
     let x = svc.get_ref().lock().unwrap();
     x.hello();
 
