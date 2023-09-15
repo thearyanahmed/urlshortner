@@ -1,7 +1,7 @@
 use std::net::TcpListener;
 // use sqlx::PgPool;
 use urlshortner::configuration::{get_configuration, Settings};
-use urlshortner::routes::health_check;
+use urlshortner::routes::{health_check,not_found};
 use actix_web::{HttpServer, web, App};
 use actix_web::dev::Server;
 
@@ -20,6 +20,7 @@ async fn main() -> std::io::Result<()> {
     Ok(())
 }
 
+// @todo add boot time
 pub struct UrlShortenerService {
     server: Server
 }
@@ -47,7 +48,8 @@ fn run(listener: TcpListener) -> Result<Server, std::io::Error> {
 
     let server = HttpServer::new(move || {
         App::new()
-            .route("/health_check",web::get().to(health_check))
+            .route("/health-check",web::get().to(health_check))
+            .default_service(web::route().to(not_found))
             // .app_data(db_pool.clone())
     })
         .listen(listener)?

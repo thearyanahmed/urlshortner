@@ -16,7 +16,7 @@ db-stop:
 watch:
 	echo "increasing number of open files to 10000 \n"
 	ulimit -n 10000
-	cargo watch -x check -x test -x run
+	RUST_LOG=trace cargo watch -x check -x test -x run
 
 run:
 	RUST_LOG=trace cargo run

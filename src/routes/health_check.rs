@@ -1,5 +1,6 @@
-use actix_web::{HttpResponse, web};
+use actix_web::{HttpResponse, http};
 use serde::{Serialize};
+use crate::routes::response::respond_with_json;
 
 #[derive(Serialize)]
 struct HealthCheckResponse {
@@ -11,8 +12,5 @@ pub async fn health_check() -> HttpResponse {
         status: "success".to_string(),
     };
 
-    match serde_json::to_string(&data) {
-        Ok(json) => HttpResponse::Ok().content_type("application/json").body(json),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
+    respond_with_json(&data, http::StatusCode::OK)
 }
