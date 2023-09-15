@@ -1,27 +1,32 @@
-use std::net::TcpListener;
-use std::sync::{Arc, Mutex};
-use sqlx::types::chrono::{DateTime, Utc};
-use actix_web::{HttpServer, web, App};
-use actix_web::dev::Server;
-use actix_web::web::Data;
 use crate::url_shortener::configuration::Settings;
 use crate::url_shortener::redis::RedisStore;
-use crate::url_shortener::routes::{health_check, not_found, testing_redis};
+use crate::url_shortener::routes::{health_check, not_found, respond_with_json, testing_redis};
+use actix_web::dev::Server;
+use actix_web::web::Data;
+use actix_web::{web, App, HttpServer};
+use sqlx::types::chrono::{DateTime, Utc};
+use std::net::TcpListener;
+use std::sync::{Arc, Mutex};
+use serde::{Serialize};
+use actix_web::HttpResponse;
 
 // @todo add boot time
-pub struct UrlShortenerService {
+pub struct Runner {
     server: Server,
-    boot_time: DateTime<Utc>,
-    // datastore service # persistent
-    // cache service # caching
-    // db: Box<dyn DataStore>,
-    // cache: dyn CacheStore,
 }
 
+pub struct Test {
+    cache: Arc<Mutex<dyn CacheStore + Send + Sync>>
+}
 
-// Define your shared data
-struct AppStore {
-    cache: Mutex<Box<dyn CacheStore>>,
+impl Test {
+    pub fn hello(&self) {
+        let mut c = self.cache.lock().unwrap();
+
+        let _ = c.find_by_key("a");
+
+        println!("hello world")
+    }
 }
 
 pub trait DataStore {
@@ -38,21 +43,26 @@ pub trait CacheStore {
 // key comes, checks in cache, not found? check in db, found -> write in cache
 // add a feature flag that enables tracking? or expose a middleware
 
-impl UrlShortenerService {
-    pub async fn build(config: &Settings) -> Result<Self, std::io::Error>
-    {
+impl Runner {
+    pub async fn build_http_server(config: &Settings) -> Result<Self, std::io::Error> {
         let address = format!("{}:{}", &config.base_url, &config.port);
 
         let listener = TcpListener::bind(&address)?;
+        let cache= RedisStore::new();
 
-        let boot_time = Utc::now();
+        let cache: Arc<Mutex<dyn CacheStore + Send + Sync>> = Arc::new(Mutex::new(cache));
+        // @note clone would be removed
+        let shared_cache: web::Data<Mutex<dyn CacheStore + Send + Sync>> = web::Data::from(cache.clone());
 
-        let server = run(listener)?;
+        let test = Test {
+            cache
+        };
 
-        Ok(Self{
-            server,
-            boot_time,
-        })
+        let test : Arc<Mutex<Test>> = Arc::new(Mutex::new(test));
+
+        let server = run(listener, shared_cache, test)?;
+
+        Ok(Self { server })
     }
 
     pub async fn listen_and_serve(self) -> Result<(), std::io::Error> {
@@ -60,28 +70,37 @@ impl UrlShortenerService {
     }
 }
 
-fn run(listener: TcpListener) -> Result<Server, std::io::Error> {
-
-    let cache = RedisStore::new();
-
-    let arc_service: Arc<Mutex<dyn CacheStore + Send + Sync>> = Arc::new(Mutex::new(cache));
-
-    let data_service: web::Data<Mutex<dyn CacheStore + Send + Sync>> = web::Data::from(arc_service);
-
+fn run(listener: TcpListener, cache: web::Data<Mutex<dyn CacheStore + Send + Sync>>, app: Arc<Mutex<Test>>) -> Result<Server, std::io::Error> {
+    let shared_app = web::Data::new(app.clone());
 
     let server = HttpServer::new(move || {
         App::new()
             .route("/health-check", web::get().to(health_check))
             .route("/shorten", web::post().to(health_check))
             .route("/visit", web::get().to(testing_redis))
+            .route("/do", web::get().to(test_run))
             .default_service(web::route().to(not_found))
-            .app_data(data_service.clone())
-            // .app_data(db.clone())
-            // .app_data(shared_redis.clone())
-
+            .app_data(shared_app.clone())
+            .app_data(cache.clone())
     })
-        .listen(listener)?
-        .run();
+    .listen(listener)?
+    .run();
 
     Ok(server)
+}
+
+#[derive(Serialize)]
+struct HealthCheckResponse {
+    status: String,
+}
+
+pub async fn test_run(svc : web::Data<Arc<Mutex<Test>>>) -> HttpResponse {
+    let x = svc.get_ref().lock().unwrap();
+    x.hello();
+
+    let data = HealthCheckResponse {
+        status: "success pikachu".to_string(),
+    };
+
+    respond_with_json(&data, actix_web::http::StatusCode::OK)
 }

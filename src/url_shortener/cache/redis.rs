@@ -19,6 +19,7 @@ impl RedisStore {
 
 impl CacheStore for RedisStore {
     fn find_by_key(&mut self, key: &str) -> Result<String, String> {
+        println!("calling from redis store, got key {}",key);
 
         match redis::cmd("GET").arg("hello").query::<String>(&mut self.con) {
             Ok(url) => {
