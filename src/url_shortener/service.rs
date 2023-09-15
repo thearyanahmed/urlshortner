@@ -17,8 +17,8 @@ pub trait DataStore {
 }
 
 pub trait CacheStore {
-    fn find_by_key(&mut self, key: &str) -> Result<String, String>;
     fn ping(&mut self) -> Result<bool, String>;
+    fn find_by_key(&mut self, key: &str) -> Result<String, String>;
     fn store(&self, key: &str) -> Result<String, String>;
 }
 
@@ -75,7 +75,7 @@ impl UrlShortenerService {
 }
 
 impl HttpServer {
-    pub async fn build_http_server(config: &Settings, svc: Arc<Mutex<UrlShortenerService>>) -> Result<(), std::io::Error> {
+    pub async fn listen_and_serve(config: &Settings, svc: Arc<Mutex<UrlShortenerService>>) -> Result<(), std::io::Error> {
         let shared_app = web::Data::new(svc.clone());
 
         let address = format!("{}:{}", &config.base_url, &config.port);

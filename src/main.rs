@@ -18,7 +18,7 @@ async fn main() -> std::io::Result<()> {
     let svc = UrlShortenerService::new(cache, db);
     let svc: Arc<Mutex<UrlShortenerService>> = Arc::new(Mutex::new(svc));
 
-    HttpServer::build_http_server(&config, svc).await?;
+    HttpServer::listen_and_serve(&config, svc).await?;
 
     Ok(())
 }
