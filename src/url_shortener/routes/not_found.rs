@@ -1,6 +1,6 @@
 use actix_web::{HttpResponse,http};
 use serde::{Serialize};
-use crate::routes::response::respond_with_json;
+use crate::url_shortener::routes::respond_with_json;
 
 #[derive(Serialize)]
 struct NotFoundResponse {
