@@ -5,6 +5,7 @@ use log::{info};
 #[derive(serde::Deserialize)]
 pub struct Settings {
     pub base_url: String,
+    pub url_prefix: String,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
 }
