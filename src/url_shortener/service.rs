@@ -37,10 +37,11 @@ pub trait CacheStore {
 pub struct HttpServer {}
 
 pub struct UrlShortenerService {
-    cache: Arc<Mutex<dyn CacheStore + Send + Sync>>,
     db: Arc<Mutex<dyn DataStore + Send + Sync>>,
+    cache: Arc<Mutex<dyn CacheStore + Send + Sync>>,
     // url_size: usize, // @todo
-    base_url: String,
+    url_prefix: String,
+    key_size: i8
 }
 
 #[derive(Serialize)]
@@ -52,18 +53,26 @@ pub struct ServiceHealth {
 
 impl UrlShortenerService {
     pub fn new(
-        cache_store: impl CacheStore + Send + Sync + 'static,
         db_store: impl DataStore + Send + Sync + 'static,
-        url_prefix: &str,
+        cache_store: impl CacheStore + Send + Sync + 'static,
+        config: &Settings,
     ) -> Self {
         let cache: Arc<Mutex<dyn CacheStore + Send + Sync>> = Arc::new(Mutex::new(cache_store));
         let db: Arc<Mutex<dyn DataStore + Send + Sync>> = Arc::new(Mutex::new(db_store));
 
-        Self { cache, db, base_url: url_prefix.to_owned() }
+        let url_prefix = config.url_prefix.to_string();
+        let key_size = config.key_size.clone();
+        
+        Self {
+            cache,
+            db,
+            url_prefix,
+            key_size,
+        }
     }
 
-    pub fn get_base_url(&self) -> String {
-        self.base_url.to_string()
+    pub fn get_url_prefix(&self) -> String {
+        self.url_prefix.to_string()
     }
 
     pub fn validate_url(&self, url: &str) -> Result<UrlParser, ParseError> {
@@ -87,7 +96,7 @@ impl UrlShortenerService {
         }
     }
 
-    fn generate_unique_key(&self, input: &str, len: usize) -> String {
+    fn generate_unique_key(&self, input: &str, len: i8) -> String {
         // Hash the input string using SHA-256
         let mut context = Context::new(&SHA256);
         context.update(input.as_bytes());
@@ -106,13 +115,14 @@ impl UrlShortenerService {
         let base64_encoded = general_purpose::URL_SAFE.encode(combined);
 
         // Truncate to 7 characters
-        let truncated = &base64_encoded[..len];
+        let truncated = &base64_encoded[..(len as usize)];
 
         truncated.to_string()
     }
 
     pub async fn record_new_url(&self, full_url: &str) -> Result<Url, Error> {
-        let key = &self.generate_unique_key(full_url, 10);
+
+        let key = &self.generate_unique_key(full_url, self.key_size.clone());
 
         let db = self.db.lock().unwrap();
 

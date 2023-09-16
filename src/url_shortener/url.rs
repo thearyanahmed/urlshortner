@@ -6,15 +6,15 @@ pub struct Url {
 }
 
 #[derive(serde::Serialize)]
-pub struct TinyUrl {
+pub struct TinyUrlResponse {
     pub url: String,
 }
 
 impl Url {
-    pub fn to_tiny_url(&self, base_url: String) -> TinyUrl {
+    pub fn to_tiny_url_response(&self, base_url: String) -> TinyUrlResponse {
         let url = format!("{}/{}",base_url, self.key);
 
-        TinyUrl {
+        TinyUrlResponse {
             url
         }
     }

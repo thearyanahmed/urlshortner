@@ -5,11 +5,14 @@ use log::info;
 #[derive(serde::Deserialize)]
 pub struct Settings {
     pub base_url: String,
-    pub url_prefix: String, // @todo rename
+    pub url_prefix: String,
+    pub database_connection_url : String,
+    pub cache_connection_url : String,
+
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
-
-    pub database_connection_url : String,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub key_size: i8,
 }
 
 pub fn get_configuration() -> Result<Settings,config::ConfigError> {

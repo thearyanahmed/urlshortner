@@ -6,9 +6,9 @@ pub struct RedisStore {
 }
 
 impl RedisStore {
-    pub fn new() -> Self {
-        // @TODO take connection string as parameter.
-        let client = redis::Client::open("redis://127.0.0.1/").expect("could not connect to redis");
+    pub fn new(connection_url: &str) -> Self {
+        let client = redis::Client::open(connection_url)
+            .expect("could not connect to redis");
 
         let con = client
             .get_connection()

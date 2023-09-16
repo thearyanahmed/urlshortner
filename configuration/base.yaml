@@ -1,13 +1,6 @@
-database:
-  driver: "postgres"
-  host: "localhost"
-  port: 54321 # from docker. check init_db
-  username: "postgres"
-  password: "password"
-  database_name: "newsletter"
-  timeout: 2 # in seconds
-
 url_prefix: "tier.app"
 port: 1234
 base_url: "localhost"
 database_connection_url: "postgres://postgres:password@localhost:54321/urlshortener"
+cache_connection_url: "redis://127.0.0.1/"
+key_size: 7
