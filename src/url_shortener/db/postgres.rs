@@ -24,10 +24,10 @@ impl DataStore for PostgresStore {
             .await
     }
 
-    async fn store(&self, original_url: &str, short_url: &str) -> Result<Url, Error> {
-        sqlx::query_as::<_, Url>(r#"INSERT INTO urls ( original_url, short_url ) VALUES ( $1, $2 ) returning id, original_url, short_url"#)
+    async fn store(&self, original_url: &str, key: &str) -> Result<Url, Error> {
+        sqlx::query_as::<_, Url>(r#"INSERT INTO urls ( original_url, key ) VALUES ( $1, $2 ) returning id, original_url, key"#)
             .bind(original_url)
-            .bind(short_url)
+            .bind(key)
             .fetch_one(&self.con)
             .await
     }

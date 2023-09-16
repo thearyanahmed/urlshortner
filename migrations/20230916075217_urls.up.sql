@@ -2,8 +2,8 @@
 CREATE TABLE urls (
     id SERIAL PRIMARY KEY,
     original_url TEXT NOT NULL,
-    short_url TEXT UNIQUE NOT NULL, -- @TODO change 
+    key TEXT UNIQUE NOT NULL, -- @TODO change
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_short_url ON urls (short_url);
+CREATE INDEX idx_key ON urls (key);
