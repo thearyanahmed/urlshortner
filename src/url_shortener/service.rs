@@ -22,8 +22,8 @@ use sqlx::Error;
 
 #[async_trait]
 pub trait DataStore {
-    async fn find_by_url(&mut self, key: &str) -> Result<Vec<Url>, sqlx::Error>;
-    fn store(&self, long_url: &str, short_url: &str) -> Result<String, String>;
+    async fn find_by_url(&mut self, key: &str) -> Result<Vec<Url>, Error>;
+    async fn store(&self, original_url: &str, key: &str) -> Result<Url, Error>;
     fn is_alive(&self) -> bool;
 }
 
@@ -104,25 +104,18 @@ impl UrlShortenerService {
         truncated.to_string()
     }
 
-    pub fn record_new_url(&self, long_url: &str) -> Result<Option<Url>, sqlx::Error> {
-        let short_url = &self.generate_unique_key(long_url, 10);
-
-        info!("short url {}", short_url);
+    pub async fn record_new_url(&self, full_url: &str) -> Result<Url, Error> {
+        let key = &self.generate_unique_key(full_url, 10);
 
         let db = self.db.lock().unwrap();
 
-        let _ = db.store(long_url, short_url);
+        let result : Url = db.store(full_url,key).await?;
 
-        let cache = self.cache.lock().unwrap();
-        let _ = cache.store(short_url, long_url);
+        // let cache = self.cache.lock().unwrap();
+        // let _ = cache.store(key, full_url);
 
-        let url_entity = Url {
-            id: 1,
-            original_url: "hello".to_string(),
-            short_url: short_url.to_string(),
-        };
 
-        Ok(Some(url_entity))
+        Ok(result)
     }
 
     pub fn get_service_health(&self) -> ServiceHealth {

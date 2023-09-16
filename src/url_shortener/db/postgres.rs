@@ -24,8 +24,12 @@ impl DataStore for PostgresStore {
             .await
     }
 
-    fn store(&self, long_url: &str, short_url: &str) -> Result<String, String> {
-        Ok("some".to_string())
+    async fn store(&self, original_url: &str, short_url: &str) -> Result<Url, Error> {
+        sqlx::query_as::<_, Url>(r#"INSERT INTO urls ( original_url, short_url ) VALUES ( $1, $2 ) returning id, original_url, short_url"#)
+            .bind(original_url)
+            .bind(short_url)
+            .fetch_one(&self.con)
+            .await
     }
 
     fn is_alive(&self) -> bool {
