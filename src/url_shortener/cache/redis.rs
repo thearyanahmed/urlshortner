@@ -1,4 +1,5 @@
 use crate::url_shortener::CacheStore;
+use async_trait::async_trait;
 
 pub struct RedisStore {
     con: redis::Connection,
@@ -17,6 +18,7 @@ impl RedisStore {
     }
 }
 
+#[async_trait]
 impl CacheStore for RedisStore {
     fn is_alive(&mut self) -> bool {
         match redis::cmd("PING").query::<String>(&mut self.con) {
@@ -27,8 +29,6 @@ impl CacheStore for RedisStore {
 
 
     fn find_by_key(&mut self, key: &str) -> Result<String, String> {
-        println!("calling from redis store, got key {}",key);
-
         match redis::cmd("GET").arg("hello").query::<String>(&mut self.con) {
             Ok(_url) => {
                 Ok("OK called".to_string())
@@ -37,7 +37,10 @@ impl CacheStore for RedisStore {
         }
     }
 
-    fn store(&self, key: &str, value: &str) -> Result<String, String> {
-        Ok("world".to_string())
+    async fn store(&mut self, key: &str, value: &str) -> Result<bool, String> {
+        match redis::cmd("SET").arg(key).arg(value).query::<String>(&mut self.con) {
+            Ok(_) => Ok(true),
+            Err(err) => Err(err.to_string()),
+        }
     }
 }

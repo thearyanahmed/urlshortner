@@ -4,7 +4,7 @@ use crate::url_shortener::Url;
 use actix_web::HttpServer as ActixHttpServer;
 use actix_web::{web, App};
 use async_trait::async_trait;
-use log::info;
+use log::{error, info};
 use ring::digest::{Context, SHA256};
 use ring::rand::SecureRandom;
 use ring::rand::SystemRandom;
@@ -27,10 +27,11 @@ pub trait DataStore {
     fn is_alive(&self) -> bool;
 }
 
+#[async_trait]
 pub trait CacheStore {
     fn is_alive(&mut self) -> bool;
     fn find_by_key(&mut self, key: &str) -> Result<String, String>;
-    fn store(&self, key: &str, value: &str) -> Result<String, String>;
+    async fn store(&mut self, key: &str, value: &str) -> Result<bool, String>;
 }
 
 pub struct HttpServer {}
@@ -96,7 +97,7 @@ impl UrlShortenerService {
         let combined = [&salt, digest.as_ref()].concat();
 
         // Encode the combined result in base64 to make it URL-safe
-        let base64_encoded = general_purpose::STANDARD_NO_PAD.encode(combined);
+        let base64_encoded = general_purpose::URL_SAFE.encode(combined);
 
         // Truncate to 7 characters
         let truncated = &base64_encoded[..len];
@@ -111,9 +112,12 @@ impl UrlShortenerService {
 
         let result : Url = db.store(full_url,key).await?;
 
-        // let cache = self.cache.lock().unwrap();
-        // let _ = cache.store(key, full_url);
+        let mut cache = self.cache.lock().unwrap();
 
+        match cache.store(key,full_url).await  {
+            Ok(_) => {},
+            Err(err) => error!("{}",err)
+        }
 
         Ok(result)
     }

@@ -41,7 +41,6 @@ pub async fn shorten_url(
         return json_response(&record, http::StatusCode::OK);
     }
 
-    println!("reached record new url");
     match svc.record_new_url(url).await {
         Ok(res) => json_response(&res, http::StatusCode::OK),
         Err(err) => return error_response(err)
