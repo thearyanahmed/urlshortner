@@ -8,9 +8,12 @@ pub struct PostgresStore {
 }
 
 impl PostgresStore {
-    pub async fn new(connection_url: &str) -> Result<Self, Error> {
+    pub fn new(connection_url: &str) -> Result<Self, Error> {
+        // let con = PgPoolOptions::new()
+        //     .connect(connection_url).await?;
+
         let con = PgPoolOptions::new()
-            .connect(connection_url).await?;
+            .connect_lazy(connection_url)?;
 
         Ok(Self {
             con,
@@ -29,5 +32,9 @@ impl DataStore for PostgresStore {
 
     fn store(&self, _key: &str) -> Result<String, String> {
         Ok("some".to_string())
+    }
+
+    fn is_alive(&self) -> bool {
+        !self.con.is_closed()
     }
 }

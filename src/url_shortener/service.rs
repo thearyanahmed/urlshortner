@@ -7,15 +7,17 @@ use std::sync::{Arc, Mutex};
 use actix_web::{HttpServer as ActixHttpServer};
 use async_trait::async_trait;
 use serde::Serialize;
+use log::{info};
 
 #[async_trait]
 pub trait DataStore {
     async fn find_by_key(&self, key: &str) -> Result<String, String>;
     fn store(&self, key: &str) -> Result<String, String>;
+    fn is_alive(&self) -> bool;
 }
 
 pub trait CacheStore {
-    fn ping(&mut self) -> Result<bool, String>;
+    fn is_alive(&mut self) -> bool;
     fn find_by_key(&mut self, key: &str) -> Result<String, String>;
     fn store(&self, key: &str) -> Result<String, String>;
 }
@@ -29,8 +31,8 @@ pub struct UrlShortenerService {
 
 #[derive(Serialize)]
 pub struct ServiceHealth {
-    redis_health: bool,
-    db_health: bool,
+    cache_is_alive: bool,
+    db_is_alive: bool,
     reporting_time: String,
 }
 
@@ -52,21 +54,17 @@ impl UrlShortenerService {
         let mut c = self.cache.lock().unwrap();
 
         let _ = c.find_by_key("a");
+        let db = self.db.lock().unwrap();
 
-        let mut health_status = ServiceHealth {
-            redis_health: false,
-            db_health: false,
+        let health_status = ServiceHealth {
+            cache_is_alive: c.is_alive(),
+            db_is_alive: db.is_alive(),
             reporting_time: Utc::now().to_string(),
         };
 
-        match c.ping() {
-            Ok(res) => health_status.redis_health = res,
-            Err(_e) => {} // @todo log / info
-        }
-
-        let db = self.db.lock().unwrap();
-
         let _ = db.find_by_key("b");
+
+        println!("connection {}", db.is_alive());
 
         health_status
     }
@@ -78,7 +76,7 @@ impl HttpServer {
 
         let address = format!("{}:{}", &config.base_url, &config.port);
 
-        println!("serving on {}", address);
+        info!("serving on {}", address);
 
         let listener = TcpListener::bind(&address)?;
 
