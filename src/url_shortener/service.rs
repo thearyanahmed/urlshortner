@@ -1,6 +1,6 @@
 use crate::url_shortener::configuration::Settings;
 use crate::url_shortener::routes::{health_check, not_found, shorten_url};
-use crate::url_shortener::Url as UrlEntity;
+use crate::url_shortener::Url;
 use actix_web::HttpServer as ActixHttpServer;
 use actix_web::{web, App};
 use async_trait::async_trait;
@@ -12,16 +12,17 @@ use serde::Serialize;
 use sqlx::types::chrono::Utc;
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
-use url::{ParseError, Url};
+use url::{ParseError, Url as UrlParser};
 
 extern crate base64;
 extern crate ring;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+
 use base64::{engine::general_purpose, Engine as _};
+use sqlx::Error;
 
 #[async_trait]
 pub trait DataStore {
-    async fn find_by_url(&self, key: &str) -> Result<String, String>;
+    async fn find_by_url(&mut self, key: &str) -> Result<Vec<Url>, sqlx::Error>;
     fn store(&self, long_url: &str, short_url: &str) -> Result<String, String>;
     fn is_alive(&self) -> bool;
 }
@@ -58,19 +59,25 @@ impl UrlShortenerService {
         Self { cache, db }
     }
 
-    pub fn validate_url(&self, url: &str) -> Result<Url, ParseError> {
-        Url::parse(url)
+    pub fn validate_url(&self, url: &str) -> Result<UrlParser, ParseError> {
+        UrlParser::parse(url)
     }
 
-    pub fn exists(&self, _url: &str) -> Result<Option<UrlEntity>, sqlx::Error> {
-        // let mut db = self.db.lock().unwrap();
+    pub async fn find_by_url(&self, url: &str) -> Result<Option<Url>, sqlx::Error> {
+        let mut db = self.db.lock().unwrap();
 
-        // db.find_by_url(key)
-        Ok(Some(UrlEntity {
-            id: 1,
-            original_url: "hello".to_string(),
-            short_url: "hello".to_string(),
-        }))
+        let result: Result<Vec<Url>, Error> = db.find_by_url(url).await;
+
+        match result {
+            Ok(records) => {
+                if !records.is_empty() {
+                    Ok(Some(records[0].clone()))
+                } else {
+                    Ok(None)
+                }
+            }
+            Err(err) => Err(err)
+        }
     }
 
     fn generate_unique_key(&self, input: &str, len: usize) -> String {
@@ -97,8 +104,8 @@ impl UrlShortenerService {
         truncated.to_string()
     }
 
-    pub fn record_new_url(&self, long_url: &str) -> Result<Option<UrlEntity>, sqlx::Error> {
-        let short_url = &self.generate_unique_key(long_url,10);
+    pub fn record_new_url(&self, long_url: &str) -> Result<Option<Url>, sqlx::Error> {
+        let short_url = &self.generate_unique_key(long_url, 10);
 
         info!("short url {}", short_url);
 
@@ -109,7 +116,7 @@ impl UrlShortenerService {
         let cache = self.cache.lock().unwrap();
         let _ = cache.store(short_url, long_url);
 
-        let url_entity = UrlEntity {
+        let url_entity = Url {
             id: 1,
             original_url: "hello".to_string(),
             short_url: short_url.to_string(),
@@ -156,8 +163,8 @@ impl HttpServer {
                 .default_service(web::route().to(not_found))
                 .app_data(shared_app.clone())
         })
-        .listen(listener)?
-        .run();
+            .listen(listener)?
+            .run();
 
         server.await
     }

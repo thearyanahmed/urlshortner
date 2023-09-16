@@ -43,20 +43,20 @@ pub async fn shorten_url(
         }
     }
 
-    // let entity_result = match svc.exists(url) {
-    //     Ok(res) => res,
-    //     Err(e) => {
-    //         let error = Hello {
-    //             message: e.to_string(),
-    //         };
-    //         return json_response(&error, http::StatusCode::BAD_REQUEST);
-    //     },
-    // };
-    // // @todo remove this
+    let entity_result = match svc.find_by_url(url).await {
+        Ok(res) => res,
+        Err(e) => {
+            let error = Hello {
+                message: e.to_string(),
+            };
+            return json_response(&error, http::StatusCode::BAD_REQUEST);
+        },
+    };
+    // @todo remove this
 
-    // if let Some(record) = entity_result { // entity already exists
-    //     return json_response(&record, http::StatusCode::OK);
-    // }
+    if let Some(record) = entity_result { // entity already exists
+        return json_response(&record, http::StatusCode::OK);
+    }
 
     let entity_result = match svc.record_new_url(url) {
         Ok(res) => res,

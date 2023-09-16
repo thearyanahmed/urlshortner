@@ -10,4 +10,4 @@ database:
 url_prefix: "tier.app"
 port: 1234
 base_url: "localhost"
-database_connection_url: "postgres://postgres:password@localhost:54321/urlshortner"
+database_connection_url: "postgres://postgres:password@localhost:54321/urlshortener"

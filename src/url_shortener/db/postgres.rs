@@ -1,7 +1,7 @@
-use sqlx::{Error, Pool, Postgres};
-use sqlx::postgres::PgPoolOptions;
-use crate::url_shortener::DataStore;
+use crate::url_shortener::{DataStore, Url};
 use async_trait::async_trait;
+use sqlx::postgres::PgPoolOptions;
+use sqlx::{Error, Pool, Postgres};
 
 pub struct PostgresStore {
     con: Pool<Postgres>,
@@ -9,25 +9,19 @@ pub struct PostgresStore {
 
 impl PostgresStore {
     pub fn new(connection_url: &str) -> Result<Self, Error> {
-        // let con = PgPoolOptions::new()
-        //     .connect(connection_url).await?;
+        let con = PgPoolOptions::new().connect_lazy(connection_url)?;
 
-        let con = PgPoolOptions::new()
-            .connect_lazy(connection_url)?;
-
-        Ok(Self {
-            con,
-        })
+        Ok(Self { con })
     }
 }
 
 #[async_trait]
 impl DataStore for PostgresStore {
-    async fn find_by_url(&self, _key: &str) -> Result<String, String> {
-        println!("postgres find by url");
-
-
-        Ok("some".to_string())
+    async fn find_by_url(&mut self, original_url: &str) -> Result<Vec<Url>, Error> {
+        sqlx::query_as::<_, Url>("SELECT * FROM urls WHERE original_url = $1 LIMIT 1")
+            .bind(original_url)
+            .fetch_all(&self.con)
+            .await
     }
 
     fn store(&self, long_url: &str, short_url: &str) -> Result<String, String> {
