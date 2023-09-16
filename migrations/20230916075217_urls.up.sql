@@ -1,8 +1,8 @@
 -- Create the table to store original URLs
 CREATE TABLE urls (
     id SERIAL PRIMARY KEY,
-    original_url TEXT NOT NULL,
-    key TEXT UNIQUE NOT NULL, -- @TODO change
+    original_url varchar(2000) NOT NULL,
+    key varchar(10) UNIQUE NOT NULL, -- @TODO change
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
