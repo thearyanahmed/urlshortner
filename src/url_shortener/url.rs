@@ -5,6 +5,18 @@ pub struct Url {
     pub short_url: String,
 }
 
-impl Url {
-    // presenter? @todo
+#[derive(serde::Serialize)]
+pub struct TinyUrl {
+    pub url: String,
 }
+
+impl Url {
+    pub fn to_tiny_url(&self, base_url: String) -> TinyUrl {
+        let url = format!("{}/{}",base_url, self.short_url);
+
+        TinyUrl {
+            url
+        }
+    }
+}
+

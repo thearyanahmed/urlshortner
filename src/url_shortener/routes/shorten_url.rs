@@ -37,12 +37,20 @@ pub async fn shorten_url(
         Err(err) => return error_response(err)
     };
 
+    let base_url = svc.get_base_url();
+
     if let Some(record) = entity_result { // entity already exists
-        return json_response(&record, http::StatusCode::OK);
+        let tiny_url = record.to_tiny_url(base_url);
+
+        return json_response(&tiny_url, http::StatusCode::OK);
     }
 
     match svc.record_new_url(url).await {
-        Ok(res) => json_response(&res, http::StatusCode::OK),
+        Ok(res) => {
+            let tiny_url = res.to_tiny_url(base_url);
+
+            return json_response(&tiny_url, http::StatusCode::OK)
+        },
         Err(err) => return error_response(err)
     }
 }

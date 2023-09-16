@@ -39,7 +39,8 @@ pub struct HttpServer {}
 pub struct UrlShortenerService {
     cache: Arc<Mutex<dyn CacheStore + Send + Sync>>,
     db: Arc<Mutex<dyn DataStore + Send + Sync>>,
-    // url_size: usize, // @todo 
+    // url_size: usize, // @todo
+    base_url: String,
 }
 
 #[derive(Serialize)]
@@ -53,18 +54,23 @@ impl UrlShortenerService {
     pub fn new(
         cache_store: impl CacheStore + Send + Sync + 'static,
         db_store: impl DataStore + Send + Sync + 'static,
+        url_prefix: &str,
     ) -> Self {
         let cache: Arc<Mutex<dyn CacheStore + Send + Sync>> = Arc::new(Mutex::new(cache_store));
         let db: Arc<Mutex<dyn DataStore + Send + Sync>> = Arc::new(Mutex::new(db_store));
 
-        Self { cache, db }
+        Self { cache, db, base_url: url_prefix.to_owned() }
+    }
+
+    pub fn get_base_url(&self) -> String {
+        self.base_url.to_string()
     }
 
     pub fn validate_url(&self, url: &str) -> Result<UrlParser, ParseError> {
         UrlParser::parse(url)
     }
 
-    pub async fn find_by_url(&self, url: &str) -> Result<Option<Url>, sqlx::Error> {
+    pub async fn find_by_url(&self, url: &str) -> Result<Option<Url>, Error> {
         let mut db = self.db.lock().unwrap();
 
         let result: Result<Vec<Url>, Error> = db.find_by_url(url).await;
