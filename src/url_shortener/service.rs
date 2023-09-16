@@ -1,18 +1,16 @@
 use crate::url_shortener::configuration::Settings;
-use crate::url_shortener::redis::RedisStore;
-use crate::url_shortener::routes::{health_check, not_found, respond_with_json};
-use actix_web::dev::Server;
-use actix_web::web::Data;
+use crate::url_shortener::routes::{health_check, not_found};
 use actix_web::{web, App};
-use sqlx::types::chrono::{DateTime, Utc};
+use sqlx::types::chrono::{Utc};
 use std::net::TcpListener;
-use std::sync::{Arc, Mutex, MutexGuard};
-use serde::{Serialize};
-use actix_web::HttpResponse;
+use std::sync::{Arc, Mutex};
 use actix_web::{HttpServer as ActixHttpServer};
+use async_trait::async_trait;
+use serde::Serialize;
 
+#[async_trait]
 pub trait DataStore {
-    fn find_by_key(&self, key: &str) -> Result<String, String>;
+    async fn find_by_key(&self, key: &str) -> Result<String, String>;
     fn store(&self, key: &str) -> Result<String, String>;
 }
 
@@ -63,7 +61,7 @@ impl UrlShortenerService {
 
         match c.ping() {
             Ok(res) => health_status.redis_health = res,
-            Err(e) => {} // @todo log / info
+            Err(_e) => {} // @todo log / info
         }
 
         let db = self.db.lock().unwrap();
@@ -79,6 +77,8 @@ impl HttpServer {
         let shared_app = web::Data::new(svc.clone());
 
         let address = format!("{}:{}", &config.base_url, &config.port);
+
+        println!("serving on {}", address);
 
         let listener = TcpListener::bind(&address)?;
 

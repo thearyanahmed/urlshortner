@@ -48,7 +48,8 @@ done
 
 echo "postgres online"
 
-DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}
+# export for postgres
+export DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}
 
 >&1 echo "DB_URL = ${DATABASE_URL}"
 

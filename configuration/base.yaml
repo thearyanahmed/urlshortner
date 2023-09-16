@@ -5,7 +5,9 @@ database:
   username: "postgres"
   password: "password"
   database_name: "newsletter"
+  timeout: 2 # in seconds
 
 url_prefix: "tier.app"
 port: 1234
 base_url: "localhost"
+database_connection_url: "postgres://postgres:password@localhost:54321/urlshortner"

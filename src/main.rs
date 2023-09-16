@@ -13,7 +13,7 @@ async fn main() -> std::io::Result<()> {
     let config = get_configuration().expect("failed to read configuration");
 
     let cache = RedisStore::new();
-    let db = PostgresStore::new();
+    let db = PostgresStore::new(&config.database_connection_url).await.expect("failed to connect to db");
 
     let svc = UrlShortenerService::new(cache, db);
     let svc: Arc<Mutex<UrlShortenerService>> = Arc::new(Mutex::new(svc));

@@ -5,11 +5,12 @@ use log::{info};
 #[derive(serde::Deserialize)]
 pub struct Settings {
     pub base_url: String,
-    pub url_prefix: String,
+    pub url_prefix: String, // @todo rename
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
-}
 
+    pub database_connection_url : String,
+}
 
 pub fn get_configuration() -> Result<Settings,config::ConfigError> {
     let base_path = std::env::current_dir().expect("failed to determine the current directory");

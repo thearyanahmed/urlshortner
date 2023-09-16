@@ -35,14 +35,14 @@ impl CacheStore for RedisStore {
         println!("calling from redis store, got key {}",key);
 
         match redis::cmd("GET").arg("hello").query::<String>(&mut self.con) {
-            Ok(url) => {
+            Ok(_url) => {
                 Ok("OK called".to_string())
             }
             Err(_) => Err("Error called".to_string()),
         }
     }
 
-    fn store(&self, key: &str) -> Result<String, String> {
+    fn store(&self, _key: &str) -> Result<String, String> {
         Ok("world".to_string())
     }
 }
