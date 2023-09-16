@@ -5,11 +5,19 @@ use actix_web::HttpServer as ActixHttpServer;
 use actix_web::{web, App};
 use async_trait::async_trait;
 use log::info;
+use ring::digest::{Context, SHA256};
+use ring::rand::SecureRandom;
+use ring::rand::SystemRandom;
 use serde::Serialize;
 use sqlx::types::chrono::Utc;
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
 use url::{ParseError, Url};
+
+extern crate base64;
+extern crate ring;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::{engine::general_purpose, Engine as _};
 
 #[async_trait]
 pub trait DataStore {
@@ -29,6 +37,7 @@ pub struct HttpServer {}
 pub struct UrlShortenerService {
     cache: Arc<Mutex<dyn CacheStore + Send + Sync>>,
     db: Arc<Mutex<dyn DataStore + Send + Sync>>,
+    // url_size: usize, // @todo 
 }
 
 #[derive(Serialize)]
@@ -64,20 +73,46 @@ impl UrlShortenerService {
         }))
     }
 
+    fn generate_unique_key(&self, input: &str, len: usize) -> String {
+        // Hash the input string using SHA-256
+        let mut context = Context::new(&SHA256);
+        context.update(input.as_bytes());
+        let digest = context.finish();
+
+        // Generate a random salt for additional uniqueness
+        let mut salt = [0u8; 8];
+        let rng = SystemRandom::new();
+        rng.fill(&mut salt)
+            .expect("Failed to generate random bytes");
+
+        // Combine the hash and salt to create a unique ID
+        let combined = [&salt, digest.as_ref()].concat();
+
+        // Encode the combined result in base64 to make it URL-safe
+        let base64_encoded = general_purpose::STANDARD_NO_PAD.encode(combined);
+
+        // Truncate to 7 characters
+        let truncated = &base64_encoded[..len];
+
+        truncated.to_string()
+    }
+
     pub fn record_new_url(&self, long_url: &str) -> Result<Option<UrlEntity>, sqlx::Error> {
-        let mut db = self.db.lock().unwrap();
+        let short_url = &self.generate_unique_key(long_url,10);
 
-        let short_url = "some short url";
+        info!("short url {}", short_url);
 
-        db.store(long_url, short_url);
+        let db = self.db.lock().unwrap();
 
-        let mut cache = self.cache.lock().unwrap();
-        cache.store(short_url, long_url);
+        let _ = db.store(long_url, short_url);
+
+        let cache = self.cache.lock().unwrap();
+        let _ = cache.store(short_url, long_url);
 
         let url_entity = UrlEntity {
             id: 1,
             original_url: "hello".to_string(),
-            short_url: "hello".to_string(),
+            short_url: short_url.to_string(),
         };
 
         Ok(Some(url_entity))

@@ -2361,11 +2361,13 @@ version = "0.1.0"
 dependencies = [
  "actix-web",
  "async-trait",
+ "base64 0.21.4",
  "chrono",
  "config",
  "log",
  "pretty_env_logger",
  "redis",
+ "ring",
  "serde",
  "serde-aux",
  "serde_derive",

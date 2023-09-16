@@ -43,7 +43,22 @@ pub async fn shorten_url(
         }
     }
 
-    let entity_result = match svc.exists(url) {
+    // let entity_result = match svc.exists(url) {
+    //     Ok(res) => res,
+    //     Err(e) => {
+    //         let error = Hello {
+    //             message: e.to_string(),
+    //         };
+    //         return json_response(&error, http::StatusCode::BAD_REQUEST);
+    //     },
+    // };
+    // // @todo remove this
+
+    // if let Some(record) = entity_result { // entity already exists
+    //     return json_response(&record, http::StatusCode::OK);
+    // }
+
+    let entity_result = match svc.record_new_url(url) {
         Ok(res) => res,
         Err(e) => {
             let error = Hello {
@@ -52,13 +67,12 @@ pub async fn shorten_url(
             return json_response(&error, http::StatusCode::BAD_REQUEST);
         },
     };
+    // @todo remove this
 
     if let Some(record) = entity_result { // entity already exists
         return json_response(&record, http::StatusCode::OK);
     }
 
-    let _ = svc.record_new_url(url);
-    
     let error = Hello {
         message: "URL is required".to_string(),
     };
