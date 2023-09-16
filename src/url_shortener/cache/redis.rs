@@ -27,13 +27,10 @@ impl CacheStore for RedisStore {
         }
     }
 
-
     fn find_by_key(&mut self, key: &str) -> Result<String, String> {
-        match redis::cmd("GET").arg("hello").query::<String>(&mut self.con) {
-            Ok(_url) => {
-                Ok("OK called".to_string())
-            }
-            Err(_) => Err("Error called".to_string()),
+        match redis::cmd("GET").arg(key).query::<String>(&mut self.con) {
+            Ok(res) => Ok(res),
+            Err(err) => Err(err.to_string()),
         }
     }
 

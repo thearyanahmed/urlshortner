@@ -2,7 +2,7 @@
 CREATE TABLE urls (
     id SERIAL PRIMARY KEY,
     original_url varchar(2000) NOT NULL,
-    key varchar(10) UNIQUE NOT NULL, -- @TODO change
+    key varchar(10) UNIQUE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

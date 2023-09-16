@@ -1,6 +1,6 @@
 use crate::url_shortener::configuration::Settings;
-use crate::url_shortener::routes::{health_check, not_found, shorten_url};
-use crate::url_shortener::Url;
+use crate::url_shortener::routes::{health_check, not_found, shorten_url, visit};
+use crate::url_shortener::{Url, UrlCacheRecord, Visit};
 use actix_web::HttpServer as ActixHttpServer;
 use actix_web::{web, App};
 use async_trait::async_trait;
@@ -22,8 +22,10 @@ use sqlx::Error;
 
 #[async_trait]
 pub trait DataStore {
-    async fn find_by_url(&mut self, key: &str) -> Result<Vec<Url>, Error>;
-    async fn store(&self, original_url: &str, key: &str) -> Result<Url, Error>;
+    async fn find_by_url(&mut self, url: &str, limit: u8) -> Result<Vec<Url>, Error>;
+    async fn find_by_key(&mut self, key: &str, limit: u8) -> Result<Vec<Url>, Error>;
+    async fn store_url(&self, original_url: &str, key: &str) -> Result<Url, Error>;
+    async fn store_visit(&self, key: &str) -> Result<Visit, Error>;
     fn is_alive(&self) -> bool;
 }
 
@@ -39,9 +41,8 @@ pub struct HttpServer {}
 pub struct UrlShortenerService {
     db: Arc<Mutex<dyn DataStore + Send + Sync>>,
     cache: Arc<Mutex<dyn CacheStore + Send + Sync>>,
-    // url_size: usize, // @todo
     url_prefix: String,
-    key_size: i8
+    key_size: i8,
 }
 
 #[derive(Serialize)]
@@ -62,7 +63,7 @@ impl UrlShortenerService {
 
         let url_prefix = config.url_prefix.to_string();
         let key_size = config.key_size.clone();
-        
+
         Self {
             cache,
             db,
@@ -79,10 +80,10 @@ impl UrlShortenerService {
         UrlParser::parse(url)
     }
 
-    pub async fn find_by_url(&self, url: &str) -> Result<Option<Url>, Error> {
+    pub async fn get_db_record_by_url(&self, url: &str) -> Result<Option<Url>, Error> {
         let mut db = self.db.lock().unwrap();
 
-        let result: Result<Vec<Url>, Error> = db.find_by_url(url).await;
+        let result: Result<Vec<Url>, Error> = db.find_by_url(url,1).await;
 
         match result {
             Ok(records) => {
@@ -90,6 +91,43 @@ impl UrlShortenerService {
                     Ok(Some(records[0].clone()))
                 } else {
                     Ok(None)
+                }
+            }
+            Err(err) => Err(err)
+        }
+    }
+
+    pub async fn get_db_record_by_key(&self, key: &str) -> Result<Option<Url>, Error> {
+        let mut db = self.db.lock().unwrap();
+
+        let result: Result<Vec<Url>, Error> = db.find_by_key(key,1).await;
+
+        match result {
+            Ok(records) => {
+                if !records.is_empty() {
+                    Ok(Some(records[0].clone()))
+                } else {
+                    Ok(None)
+                }
+            }
+            Err(err) => Err(err)
+        }
+    }
+
+    pub async fn get_cache_record_by_key(&self, key: &str) -> Result<Option<UrlCacheRecord>, String> {
+        let mut cache = self.cache.lock().unwrap();
+
+        let result: Result<String, String> = cache.find_by_key(key);
+
+        match result {
+            Ok(record) => {
+                if record == "" {
+                    Ok(None)
+                } else {
+                    Ok(Some(UrlCacheRecord{
+                        original_url: record,
+                        key : key.to_string(),
+                    }))
                 }
             }
             Err(err) => Err(err)
@@ -120,20 +158,34 @@ impl UrlShortenerService {
         truncated.to_string()
     }
 
-    pub async fn record_new_url(&self, full_url: &str) -> Result<Url, Error> {
-
+    pub async fn store_new_url(&self, full_url: &str) -> Result<Url, Error> {
         let key = &self.generate_unique_key(full_url, self.key_size.clone());
 
         let db = self.db.lock().unwrap();
 
-        let result : Url = db.store(full_url,key).await?;
+        let result: Url = db.store_url(full_url, key).await?;
 
+        let _= self.store_new_url_in_cache(key,full_url);
+
+        Ok(result)
+    }
+
+    pub async fn store_new_url_in_cache(&self, key: &str, full_url: &str) -> Result<bool, String> {
         let mut cache = self.cache.lock().unwrap();
 
-        match cache.store(key,full_url).await  {
-            Ok(_) => {},
-            Err(err) => error!("{}",err)
+        match cache.store(key, full_url).await {
+            Ok(_) => Ok(true),
+            Err(err) => {
+                error!("{}",err);
+                Err(err)
+            }
         }
+    }
+
+    pub async fn store_visit_in_db(&self, key: &str) -> Result<Visit, Error>{
+        let db = self.db.lock().unwrap();
+
+        let result: Visit = db.store_visit(key).await?;
 
         Ok(result)
     }
@@ -149,8 +201,6 @@ impl UrlShortenerService {
             db_is_alive: db.is_alive(),
             reporting_time: Utc::now().to_string(),
         };
-
-        // let _ = db.find_by_key("b");
 
         health_status
     }
@@ -173,6 +223,7 @@ impl HttpServer {
             App::new()
                 .route("/health-check", web::get().to(health_check))
                 .route("/shorten", web::post().to(shorten_url))
+                .route("/visit/{key}", web::get().to(visit))
                 .default_service(web::route().to(not_found))
                 .app_data(shared_app.clone())
         })

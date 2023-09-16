@@ -6,6 +6,12 @@ pub struct Url {
 }
 
 #[derive(serde::Serialize)]
+pub struct UrlCacheRecord {
+    pub original_url: String,
+    pub key: String,
+}
+
+#[derive(serde::Serialize)]
 pub struct TinyUrlResponse {
     pub url: String,
 }
