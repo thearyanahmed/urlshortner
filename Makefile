@@ -1,4 +1,4 @@
-.PHONY: fmt db-init db-stop watch
+.PHONY: fmt db-init db-stop watch clippy run db-url db-connect redis-init
 
 fmt:
 	cargo fmt -- --check
@@ -9,7 +9,7 @@ clippy:
 db-init:
 	chmod +x ./scripts/init_db.sh && ./scripts/init_db.sh
 
-db-stop:
+docker-stop:
 	echo "stopping all running containers"
 	docker stop $$(docker ps -q)
 
@@ -24,3 +24,15 @@ run:
 
 db-url:
 	@echo "$(DATABASE_URL)"
+
+db-connect:
+	docker exec -it $$(docker ps -q --filter ancestor=postgres) psql -U postgres -d urlshortener
+
+redis-init:
+	chmod +x ./scripts/init_redis.sh && ./scripts/init_redis.sh
+
+build:
+	cargo build --release
+
+prod-run:
+	RUST_LOG=trace ./target/release/urlshortner

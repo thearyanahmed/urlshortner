@@ -18,20 +18,10 @@ impl PostgresStore {
 #[async_trait]
 impl DataStore for PostgresStore {
     async fn find_by_url(&mut self, original_url: &str, limit: u8) -> Result<Vec<Url>, Error> {
-        // sqlx::query_as::<_, Url>("SELECT * FROM urls WHERE original_url = $1 LIMIT 1")
-        //     .bind(original_url)
-        //     .fetch_all(&self.con)
-        //     .await
-
         self.find_by("original_url", original_url,limit).await
     }
 
     async fn find_by_key(&mut self, key: &str, limit: u8) -> Result<Vec<Url>, Error> {
-        // sqlx::query_as::<_, Url>("SELECT * FROM urls WHERE key = $1 LIMIT 1")
-        //     .bind(key)
-        //     .fetch_all(&self.con)
-        //     .await
-
         self.find_by("key", key,limit).await
     }
 

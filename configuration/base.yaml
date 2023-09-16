@@ -2,5 +2,6 @@ url_prefix: "tier.app"
 port: 1234
 base_url: "localhost"
 database_connection_url: "postgres://postgres:password@localhost:54321/urlshortener"
-cache_connection_url: "redis://127.0.0.1/"
+#cache_connection_url: "redis://127.0.0.1/" # using localhost
+cache_connection_url: "redis://localhost:6379/" # using docker
 key_size: 7
