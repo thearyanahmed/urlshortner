@@ -14,7 +14,6 @@ if [[ $* == *--sd* ]]; then
     >&1 echo "Skipping Docker"
 else
     docker run \
-        --name my_redis_container \
         -p "${REDIS_PORT}:6379" \
         -d redis
 

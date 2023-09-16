@@ -110,7 +110,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"url\" : \"https://new.cdomkk/hello?123asdpq3\"\n}"
+					"raw": "{\n    \"url\" : \"https://apple.com\"\n}"
 				},
 				"url": {
 					"raw": "http://localhost:1234/shorten",
@@ -133,16 +133,8 @@
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.test(\"Response status code is 404\", function () {",
-							"  pm.response.to.have.status(404);",
-							"});",
-							"",
-							"",
-							"pm.test(\"Response has a non-empty message field\", function () {",
-							"    const responseData = pm.response.json();",
-							"    ",
-							"    pm.expect(responseData).to.be.an('object');",
-							"    pm.expect(responseData.message).to.exist.and.to.have.lengthOf.at.least(1, \"Value should not be empty\");",
+							"pm.test(\"Response status code is 200\", function () {",
+							"  pm.response.to.have.status(200);",
 							"});",
 							"",
 							"",
@@ -151,19 +143,7 @@
 							"});",
 							"",
 							"",
-							"pm.test(\"Verify that the response does not have any additional fields\", function () {",
-							"    const responseData = pm.response.json();",
-							"    ",
-							"    pm.expect(responseData).to.be.an('object');",
-							"    pm.expect(Object.keys(responseData)).to.have.lengthOf(1, \"Response should only have one field\");",
-							"});",
-							"",
-							"",
-							"pm.test(\"Validate the response format\", function () {",
-							"    pm.expect(pm.response.code).to.equal(404);",
-							"    pm.expect(pm.response.json()).to.be.an('object');",
-							"    pm.expect(pm.response.json().message).to.exist.and.to.be.a('string');",
-							"});"
+							""
 						],
 						"type": "text/javascript"
 					}
@@ -173,14 +153,15 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:1234/visit",
+					"raw": "http://localhost:1234/visit/PL9B8g5",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "1234",
 					"path": [
-						"visit"
+						"visit",
+						"PL9B8g5"
 					]
 				}
 			},

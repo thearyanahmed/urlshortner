@@ -158,16 +158,47 @@ impl UrlShortenerService {
         truncated.to_string()
     }
 
-    pub async fn store_new_url(&self, full_url: &str) -> Result<Url, Error> {
-        let key = &self.generate_unique_key(full_url, self.key_size.clone());
+    pub async fn store_new_url(&self, full_url: &str) -> Result<Url, String> {
+        let mut key = &self.generate_unique_key(full_url, self.key_size.clone());
+        let mut collusion  = true;
+        let mut counter = 0;
+
+        let mut checking_key = key.clone();
+
+        while collusion {
+            if counter > 3 { // @note replicate rate limiting
+                return Err("too many hash collusion".to_string());
+            }
+
+            counter += 1;
+
+            let new_key = &self.generate_unique_key(full_url, self.key_size.clone());
+
+            match self.get_db_record_by_key(&checking_key.to_string()).await {
+                Ok(record) => {
+                    if record.is_some() {
+                        checking_key = new_key.to_string();
+                    } else {
+                        collusion = false
+                    }
+                }
+                Err(err) => return Err(err.to_string())
+            }
+        }
+
+        key = &checking_key;
 
         let db = self.db.lock().unwrap();
 
-        let result: Url = db.store_url(full_url, key).await?;
+        match db.store_url(full_url, key).await {
+            Ok(url) => {
+                let _= self.store_new_url_in_cache(key,full_url);
 
-        let _= self.store_new_url_in_cache(key,full_url);
+                Ok(url)
+            },
+            Err(err) => Err(err.to_string()),
+        }
 
-        Ok(result)
     }
 
     pub async fn store_new_url_in_cache(&self, key: &str, full_url: &str) -> Result<bool, String> {
