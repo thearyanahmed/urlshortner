@@ -1,4 +1,4 @@
-use crate::url_shortener::{CacheStore};
+use crate::url_shortener::CacheStore;
 
 pub struct RedisStore {
     con: redis::Connection,
@@ -37,7 +37,7 @@ impl CacheStore for RedisStore {
         }
     }
 
-    fn store(&self, _key: &str) -> Result<String, String> {
+    fn store(&self, key: &str, value: &str) -> Result<String, String> {
         Ok("world".to_string())
     }
 }

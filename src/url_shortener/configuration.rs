@@ -1,6 +1,6 @@
 use std::convert::{TryInto, TryFrom};
 use serde_aux::field_attributes::deserialize_number_from_string;
-use log::{info};
+use log::info;
 
 #[derive(serde::Deserialize)]
 pub struct Settings {

@@ -51,7 +51,7 @@ echo "postgres online"
 # export for postgres
 export DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}
 
->&1 echo "DB_URL = ${DATABASE_URL}"
+>&1 echo "DATABASE_URL = ${DATABASE_URL} \n has been exported to shell session"
 
 >&1 echo "Postgres is up and running on port ${DB_PORT}!"
 

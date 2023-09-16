@@ -23,14 +23,14 @@ impl PostgresStore {
 
 #[async_trait]
 impl DataStore for PostgresStore {
-    async fn find_by_key(&self, _key: &str) -> Result<String, String> {
-        println!("postgres find by key");
+    async fn find_by_url(&self, _key: &str) -> Result<String, String> {
+        println!("postgres find by url");
 
 
         Ok("some".to_string())
     }
 
-    fn store(&self, _key: &str) -> Result<String, String> {
+    fn store(&self, long_url: &str, short_url: &str) -> Result<String, String> {
         Ok("some".to_string())
     }
 
