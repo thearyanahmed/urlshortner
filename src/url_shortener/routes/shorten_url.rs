@@ -1,7 +1,7 @@
 use crate::url_shortener::routes::{error_response, json_response};
 use crate::url_shortener::UrlShortenerService;
 use actix_web::{http, web, HttpResponse};
-use serde::{Deserialize};
+use serde::Deserialize;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 

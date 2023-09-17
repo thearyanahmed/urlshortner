@@ -1,4 +1,4 @@
-use crate::url_shortener::routes::{error_response};
+use crate::url_shortener::routes::error_response;
 use crate::url_shortener::UrlShortenerService;
 use actix_web::{http, web, HttpResponse};
 use actix_web::Result;

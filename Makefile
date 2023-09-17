@@ -20,6 +20,7 @@ watch:
 	RUST_LOG=trace cargo watch -x check -x test -x run
 
 run:
+	export DATABASE_URL="postgres://postgres:password@localhost:54321/urlshortener"
 	RUST_LOG=trace cargo run
 
 db-url:
