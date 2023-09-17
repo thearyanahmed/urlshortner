@@ -13,7 +13,7 @@ pub struct UrlCacheRecord {
 
 #[derive(serde::Serialize)]
 pub struct TinyUrlResponse {
-    pub url: String, // @todo make it short url
+    pub short_url: String,
 }
 
 impl Url {
@@ -21,7 +21,7 @@ impl Url {
         let url = format!("{}/{}",base_url, self.key);
 
         TinyUrlResponse {
-            url
+            short_url: url
         }
     }
 }
