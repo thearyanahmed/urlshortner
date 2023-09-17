@@ -19,6 +19,11 @@ watch:
 	export DATABASE_URL="postgres://postgres:password@localhost:54321/urlshortener" 
 	RUST_LOG=trace cargo watch -x check -x test -x run
 
+test:
+	echo "increasing number of open files to 10000 \n"
+	ulimit -n 10000
+	cargo test -- --test-threads=3
+
 run:
 	export DATABASE_URL="postgres://postgres:password@localhost:54321/urlshortener"
 	RUST_LOG=trace cargo run

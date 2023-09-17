@@ -2,7 +2,7 @@ use std::convert::{TryInto, TryFrom};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use log::info;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize,Clone)]
 pub struct Settings {
     pub base_url: String,
     pub url_prefix: String,
