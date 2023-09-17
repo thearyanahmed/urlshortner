@@ -41,7 +41,7 @@ mod integration_tests {
             url_prefix: "tier.app".to_string(),
             key_size: 7,
             cache_connection_url: "redis://localhost:6379/".to_string(),
-            database_connection_url: db_connection_str.to_string(), // Replace with your actual DB connection URL
+            database_connection_url: db_connection_str.to_string(),
         };
 
         let config = Arc::new(config); // Wrap config in Arc
@@ -65,7 +65,6 @@ mod integration_tests {
             app_url
         }
     }
-
 
     // Configures the database. Creates a connection pool and runs migration.
     pub async fn configure_database(connection_str: &str, db: &str) {

@@ -152,7 +152,7 @@ impl UrlShortenerService {
         // Encode the combined result in base64 to make it URL-safe
         let base64_encoded = general_purpose::URL_SAFE.encode(combined);
 
-        // Truncate to 7 characters
+        // Truncate to N characters
         let truncated = &base64_encoded[..(len as usize)];
 
         truncated.to_string()
